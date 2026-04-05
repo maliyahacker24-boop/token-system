@@ -45,5 +45,5 @@ app.post('/api/admin/login', (request, response) => {
 })
 
 app.listen(port, () => {
-  console.log(`Chaap Wala backend listening on port ${port}`)
+  console.log(`Restro Token System backend listening on port ${port}`)
 })
