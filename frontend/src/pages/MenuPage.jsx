@@ -4,7 +4,9 @@ import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import Cart from '../components/Cart'
 import CheckoutUpsellModal from '../components/CheckoutUpsellModal'
+import CustomerNameModal from '../components/CustomerNameModal'
 import Menu from '../components/Menu'
+import OrderConfirmationModal from '../components/OrderConfirmationModal'
 import { getLatestOrder, saveOrder } from '../orderStore'
 import { loadAdminConfigs, subscribeAdminConfigs } from '../adminStore'
 import { getServiceTypeLabel } from '../serviceType'
@@ -79,6 +81,24 @@ const DRINK_UPSELL_ITEMS = [
   },
 ]
 
+const GST_RATE = 0.05
+
+const formatMoney = (value) => Number(value.toFixed(2))
+
+const formatCustomerName = (value) =>
+  value
+    .replace(/\s+/g, ' ')
+    .trimStart()
+    .slice(0, 32)
+
+const getPaymentMethodLabel = (value) => {
+  if (`${value || ''}`.trim().toLowerCase() === 'prepaid') {
+    return 'Online'
+  }
+
+  return value || 'Cash'
+}
+
 const KIOSK_IDLE_TIMEOUT_MS = 90000
 
 const KIOSK_PROMO_COLUMNS = [
@@ -116,6 +136,9 @@ function MenuPage() {
   const [businessName, setBusinessName] = useState('Customer Menu')
   const [selectedBusinessId, setSelectedBusinessId] = useState('')
   const [isCheckoutUpsellOpen, setIsCheckoutUpsellOpen] = useState(false)
+  const [isOrderConfirmationOpen, setIsOrderConfirmationOpen] = useState(false)
+  const [isCustomerNameModalOpen, setIsCustomerNameModalOpen] = useState(false)
+  const [customerName, setCustomerName] = useState('')
   const [isKioskSessionActive, setIsKioskSessionActive] = useState(!isKioskMode)
   const receiptRef = useRef(null)
   const kioskIdleTimerRef = useRef(null)
@@ -130,8 +153,11 @@ function MenuPage() {
   const resetKioskExperience = () => {
     clearKioskIdleTimer()
     setIsCheckoutUpsellOpen(false)
+    setIsOrderConfirmationOpen(false)
+    setIsCustomerNameModalOpen(false)
     setCartItems([])
     setServiceType('')
+    setCustomerName('')
     setPaymentMethod('Cash')
     setOrderSource('Kiosk')
     setError('')
@@ -290,6 +316,9 @@ function MenuPage() {
     [cartItems],
   )
 
+  const gstAmount = useMemo(() => formatMoney(totalPrice * GST_RATE), [totalPrice])
+  const finalTotal = useMemo(() => formatMoney(totalPrice + gstAmount), [gstAmount, totalPrice])
+
   const addToCart = (menuItem) => {
     setCartItems((currentCart) => {
       const existingItem = currentCart.find((item) => item.id === menuItem.id)
@@ -335,7 +364,59 @@ function MenuPage() {
     setIsCheckoutUpsellOpen(false)
   }
 
-  const placeOrder = async () => {
+  const openCustomerNameModal = () => {
+    setError('')
+    setIsCustomerNameModalOpen(true)
+  }
+
+  const closeCustomerNameModal = () => {
+    setIsCustomerNameModalOpen(false)
+  }
+
+  const appendCustomerNameCharacter = (character) => {
+    setCustomerName((currentValue) => formatCustomerName(`${currentValue}${character}`))
+  }
+
+  const deleteCustomerNameCharacter = () => {
+    setCustomerName((currentValue) => currentValue.slice(0, -1))
+  }
+
+  const clearCustomerName = () => {
+    setCustomerName('')
+  }
+
+  const confirmEatInService = () => {
+    const trimmedName = customerName.trim()
+    if (!trimmedName) {
+      return
+    }
+
+    setCustomerName(trimmedName)
+    setServiceType('Dine In')
+    setIsCustomerNameModalOpen(false)
+  }
+
+  const openOrderConfirmation = () => {
+    if (cartItems.length === 0) {
+      setError('Please add at least one item to place the order.')
+      return
+    }
+
+    setError('')
+    setIsCheckoutUpsellOpen(false)
+    setIsOrderConfirmationOpen(true)
+  }
+
+  const closeOrderConfirmation = () => {
+    setIsOrderConfirmationOpen(false)
+  }
+
+  const goBackToAddOns = () => {
+    setIsOrderConfirmationOpen(false)
+    setIsCheckoutUpsellOpen(true)
+  }
+
+  const placeOrder = async (selectedPaymentMethod = paymentMethod) => {
     if (cartItems.length === 0) {
       setError('Please add at least one item to place the order.')
       return
@@ -344,6 +425,8 @@ function MenuPage() {
     setError('')
     setIsPlacingOrder(true)
     setIsCheckoutUpsellOpen(false)
+    setIsOrderConfirmationOpen(false)
+    setPaymentMethod(selectedPaymentMethod)
 
     try {
       const { data: latestOrderData } = await getLatestOrder()
@@ -357,7 +440,7 @@ function MenuPage() {
         businessId: selectedBusinessId,
         businessName,
         serviceType,
-        paymentMethod,
+        paymentMethod: selectedPaymentMethod,
         orderSource,
         items: cartItems.map((item) => ({
           id: item.id,
@@ -374,7 +457,13 @@ function MenuPage() {
         throw insertError
       }
 
-      setReceiptOrder(orderPayload)
+      setReceiptOrder({
+        ...orderPayload,
+        paymentMethod: selectedPaymentMethod,
+        customerName: serviceType === 'Dine In' ? customerName.trim() : '',
+        gst_amount: gstAmount,
+        grand_total: finalTotal,
+      })
       setCartItems([])
     } catch (insertOrderError) {
       setError(insertOrderError?.message || 'Could not place order. Please try again.')
@@ -388,6 +477,12 @@ function MenuPage() {
       dateStyle: 'medium',
       timeStyle: 'short',
     })
+    const receiptSubtotal = receiptOrder.items.reduce(
+      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+      0,
+    )
+    const receiptGst = formatMoney(receiptSubtotal * GST_RATE)
+    const receiptFinalTotal = formatMoney(receiptSubtotal + receiptGst)
 
     return (
       <main className="min-h-screen bg-gradient-to-b from-amber-50 to-emerald-50 px-4 py-10">
@@ -396,11 +491,12 @@ function MenuPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Tax Invoice</p>
             <h1 className="mt-2 text-3xl font-black text-slate-900">{businessName}</h1>
             <p className="mt-3 text-sm font-semibold text-slate-700">{getServiceTypeLabel(receiptOrder.serviceType || serviceType)}</p>
+            {receiptOrder.customerName && <p className="mt-2 text-sm font-semibold text-slate-700">Customer: {receiptOrder.customerName}</p>}
             <p className="mt-2 text-sm text-slate-600">Order Date: {receiptDate}</p>
           </div>
           <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left text-sm text-slate-700">
             <p className="font-semibold text-slate-900">Bill To</p>
-            <p>Customer</p>
+            <p>{receiptOrder.customerName || 'Customer'}</p>
             <p className="mt-3 font-semibold text-slate-900">Receipt Info</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
@@ -422,6 +518,12 @@ function MenuPage() {
                 <p className="font-semibold text-slate-900">{getServiceTypeLabel(receiptOrder.serviceType || serviceType)}</p>
               </div>
             </div>
+            {receiptOrder.customerName && (
+              <div className="mt-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Customer Name</p>
+                <p className="font-semibold text-slate-900">{receiptOrder.customerName}</p>
+              </div>
+            )}
           </div>
 
           <div className="mb-6 grid gap-3 rounded-3xl bg-slate-50 p-4 text-left text-sm text-slate-700">
@@ -464,12 +566,20 @@ function MenuPage() {
 
           <div className="mb-6 space-y-3 rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
             <div className="flex items-center justify-between font-semibold text-slate-900">
+              <span>Subtotal</span>
+              <span>₹{receiptSubtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>GST (5%)</span>
+              <span>₹{receiptGst.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between font-semibold text-slate-900">
               <span>Grand Total</span>
-              <span>₹{receiptOrder.total_price}</span>
+              <span>₹{receiptFinalTotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Payment Mode</span>
-              <span>{receiptOrder.paymentMethod || paymentMethod}</span>
+              <span>{getPaymentMethodLabel(receiptOrder.paymentMethod || paymentMethod)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Order Source</span>
@@ -634,7 +744,7 @@ function MenuPage() {
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => setServiceType('Dine In')}
+              onClick={openCustomerNameModal}
               className="rounded-[1.8rem] border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Inside dining</p>
@@ -656,6 +766,16 @@ function MenuPage() {
             Select one option before you can continue to the menu.
           </p>
         </section>
+
+        <CustomerNameModal
+          isOpen={isCustomerNameModalOpen}
+          value={customerName}
+          onAppend={appendCustomerNameCharacter}
+          onBackspace={deleteCustomerNameCharacter}
+          onClear={clearCustomerName}
+          onClose={closeCustomerNameModal}
+          onConfirm={confirmEatInService}
+        />
       </main>
     )
   }
@@ -690,7 +810,7 @@ function MenuPage() {
               </div>
               <div className="rounded-[1.25rem] bg-white/10 px-4 py-3 ring-1 ring-white/10">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">Order Value</p>
-                <p className="mt-2 text-xl font-black">₹{totalPrice}</p>
+                <p className="mt-2 text-xl font-black">₹{finalTotal.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -758,8 +878,10 @@ function MenuPage() {
             <div className="rounded-[1.4rem] bg-[linear-gradient(135deg,#fff7ed_0%,#fffbeb_100%)] px-5 py-4 ring-1 ring-amber-100">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">Session Summary</p>
               <p className="mt-3 text-sm text-slate-700">Service: {getServiceTypeLabel(serviceType)}</p>
-              <p className="mt-2 text-sm text-slate-700">Payment: {paymentMethod}</p>
+              {customerName && <p className="mt-2 text-sm text-slate-700">Customer: {customerName}</p>}
+              <p className="mt-2 text-sm text-slate-700">Payment: {getPaymentMethodLabel(paymentMethod)}</p>
               <p className="mt-2 text-sm text-slate-700">Source: {orderSource}</p>
+              <p className="mt-2 text-sm text-slate-700">GST: ₹{gstAmount.toFixed(2)}</p>
             </div>
           </div>
         </section>
@@ -784,10 +906,30 @@ function MenuPage() {
       <CheckoutUpsellModal
         isOpen={isCheckoutUpsellOpen}
         drinks={DRINK_UPSELL_ITEMS}
+        cartItems={cartItems}
+        subtotal={totalPrice}
+        gstAmount={gstAmount}
+        finalTotal={finalTotal}
         onAddDrink={addToCart}
         onClose={closeCheckoutUpsell}
-        onSkipCheckout={placeOrder}
-        onContinue={placeOrder}
+        onSkipCheckout={openOrderConfirmation}
+        onContinue={openOrderConfirmation}
+        isPlacingOrder={isPlacingOrder}
+      />
+
+      <OrderConfirmationModal
+        isOpen={isOrderConfirmationOpen}
+        cartItems={cartItems}
+        customerName={customerName}
+        serviceLabel={getServiceTypeLabel(serviceType)}
+        orderSource={orderSource}
+        subtotal={totalPrice}
+        gstAmount={gstAmount}
+        finalTotal={finalTotal}
+        gstRateLabel="5%"
+        onBack={goBackToAddOns}
+        onConfirmCash={() => placeOrder('Cash')}
+        onConfirmOnline={() => placeOrder('Prepaid')}
         isPlacingOrder={isPlacingOrder}
       />
     </main>

@@ -1,10 +1,23 @@
 const currency = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 })
 
-function CheckoutUpsellModal({ isOpen, drinks, onAddDrink, onClose, onSkipCheckout, onContinue, isPlacingOrder }) {
+function CheckoutUpsellModal({
+  isOpen,
+  drinks,
+  cartItems,
+  subtotal,
+  gstAmount,
+  finalTotal,
+  onAddDrink,
+  onClose,
+  onSkipCheckout,
+  onContinue,
+  isPlacingOrder,
+}) {
   if (!isOpen) {
     return null
   }
@@ -29,7 +42,8 @@ function CheckoutUpsellModal({ isOpen, drinks, onAddDrink, onClose, onSkipChecko
           </button>
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-8 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {drinks.map((drink) => (
             <button
               key={drink.id}
@@ -64,6 +78,55 @@ function CheckoutUpsellModal({ isOpen, drinks, onAddDrink, onClose, onSkipChecko
               </div>
             </button>
           ))}
+          </div>
+
+          <aside className="rounded-[1.75rem] bg-[linear-gradient(180deg,#0f172a_0%,#111827_100%)] p-5 text-white shadow-[0_18px_50px_rgba(15,23,42,0.28)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-300">Current Order</p>
+                <h3 className="mt-2 text-2xl font-black">Items added here</h3>
+              </div>
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white ring-1 ring-white/10">
+                {cartItems.reduce((sum, item) => sum + item.quantity, 0)} item(s)
+              </span>
+            </div>
+
+            <div className="mt-5 max-h-[20rem] space-y-3 overflow-y-auto pr-1">
+              {cartItems.length === 0 ? (
+                <div className="rounded-[1.4rem] border border-dashed border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                  Nothing added yet. Tap any drink card and it will appear here instantly.
+                </div>
+              ) : (
+                cartItems.map((item) => (
+                  <div key={item.id} className="rounded-[1.3rem] bg-white/8 p-4 ring-1 ring-white/10">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-white">{item.name}</p>
+                        <p className="mt-1 text-xs text-slate-300">Qty {item.quantity} • {currency.format(item.price)} each</p>
+                      </div>
+                      <span className="text-sm font-bold text-amber-300">{currency.format(item.price * item.quantity)}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-5 space-y-3 rounded-[1.4rem] bg-white/5 p-4 ring-1 ring-white/10">
+              <div className="flex items-center justify-between text-sm text-slate-300">
+                <span>Subtotal</span>
+                <span className="font-semibold text-white">{currency.format(subtotal)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-slate-300">
+                <span>GST (5%)</span>
+                <span className="font-semibold text-white">{currency.format(gstAmount)}</span>
+              </div>
+              <div className="h-px bg-white/10" />
+              <div className="flex items-center justify-between text-base font-black text-white">
+                <span>Total After GST</span>
+                <span>{currency.format(finalTotal)}</span>
+              </div>
+            </div>
+          </aside>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -72,7 +135,7 @@ function CheckoutUpsellModal({ isOpen, drinks, onAddDrink, onClose, onSkipChecko
             onClick={onSkipCheckout}
             className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
           >
-            No Drinks, Continue
+            Skip Drinks, Review Order
           </button>
           <button
             type="button"
@@ -80,7 +143,7 @@ function CheckoutUpsellModal({ isOpen, drinks, onAddDrink, onClose, onSkipChecko
             disabled={isPlacingOrder}
             className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
           >
-            {isPlacingOrder ? 'Placing Order...' : 'Continue to Payment'}
+            {isPlacingOrder ? 'Opening Summary...' : 'Review Order Summary'}
           </button>
         </div>
       </div>
