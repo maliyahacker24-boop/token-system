@@ -82,7 +82,7 @@ function Home() {
               },
               {
                 title: 'Outside Token LED',
-                copy: 'Show ready pickup tokens clearly for takeaway customers.',
+                copy: 'Show ready pickup tokens clearly for take-out customers.',
                 to: '/display',
                 tone: 'bg-emerald-600 text-white',
               },

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isSupabaseConfigured } from '../supabaseClient'
 import { loadOrders } from '../orderStore'
+import { getServiceTypeLabel } from '../serviceType'
 
 const currency = new Intl.NumberFormat('en-IN', {
   style: 'currency',
@@ -20,7 +21,7 @@ SELECT "paymentMethod", COUNT(*)
 FROM orders
 GROUP BY "paymentMethod";
 
--- Dine In vs Take Away counts
+-- Eat In vs Take Out counts
 SELECT "serviceType", COUNT(*)
 FROM orders
 GROUP BY "serviceType";
@@ -192,8 +193,8 @@ function Analytics() {
             <h2 className="text-xl font-bold text-slate-900">Performance Metrics</h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {[
-                { label: 'Dine In', value: summary.dineIn },
-                { label: 'Take Away', value: summary.takeAway },
+                { label: getServiceTypeLabel('Dine In'), value: summary.dineIn },
+                { label: getServiceTypeLabel('Take Away'), value: summary.takeAway },
                 { label: 'Waste Orders', value: summary.waste },
                 { label: 'Best Seller', value: `${summary.bestSelling[0]} (${summary.bestSelling[1]})` },
                 { label: 'Lowest Seller', value: `${summary.lowestSelling[0]} (${summary.lowestSelling[1]})` },

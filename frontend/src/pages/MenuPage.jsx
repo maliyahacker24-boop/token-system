@@ -7,6 +7,7 @@ import CheckoutUpsellModal from '../components/CheckoutUpsellModal'
 import Menu from '../components/Menu'
 import { getLatestOrder, saveOrder } from '../orderStore'
 import { loadAdminConfigs, subscribeAdminConfigs } from '../adminStore'
+import { getServiceTypeLabel } from '../serviceType'
 
 const MENU_ITEMS = [
   { id: 'veg-momos', name: 'Veg Momos', price: 60 },
@@ -324,7 +325,7 @@ function MenuPage() {
           <div className="mb-6 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Tax Invoice</p>
             <h1 className="mt-2 text-3xl font-black text-slate-900">{businessName}</h1>
-            <p className="mt-3 text-sm font-semibold text-slate-700">{receiptOrder.serviceType || serviceType}</p>
+            <p className="mt-3 text-sm font-semibold text-slate-700">{getServiceTypeLabel(receiptOrder.serviceType || serviceType)}</p>
             <p className="mt-2 text-sm text-slate-600">Order Date: {receiptDate}</p>
           </div>
           <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-left text-sm text-slate-700">
@@ -348,7 +349,7 @@ function MenuPage() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Service</p>
-                <p className="font-semibold text-slate-900">{receiptOrder.serviceType || serviceType}</p>
+                <p className="font-semibold text-slate-900">{getServiceTypeLabel(receiptOrder.serviceType || serviceType)}</p>
               </div>
             </div>
           </div>
@@ -364,7 +365,7 @@ function MenuPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="font-semibold">Service</span>
-              <span>{receiptOrder.serviceType || serviceType}</span>
+              <span>{getServiceTypeLabel(receiptOrder.serviceType || serviceType)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-semibold">Total Items</span>
@@ -451,10 +452,11 @@ function MenuPage() {
           )}
 
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">Please choose</p>
-          <h1 className="mt-6 text-4xl font-black text-slate-900">Dine In or Take Away?</h1>
+          <h1 className="mt-6 text-4xl font-black text-slate-900">Eat In or Take Out?</h1>
           <p className="mt-4 text-lg leading-8 text-slate-600">
-            If you want to eat here in the restaurant / अगर आप यहाँ रेस्टोरेंट में खाना चाहते हैं... <br />
-            Or if you want to pack the food / अगर आप खाना पैक करना चाहते हैं...
+            Choose Eat In if the customer will have the food here.
+            <br />
+            Choose Take Out if the order should be packed to go.
           </p>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -463,14 +465,14 @@ function MenuPage() {
               onClick={() => setServiceType('Dine In')}
               className="rounded-3xl bg-slate-900 px-6 py-6 text-xl font-bold text-white shadow-lg transition hover:bg-slate-700"
             >
-              DINE IN
+              EAT IN
             </button>
             <button
               type="button"
               onClick={() => setServiceType('Take Away')}
               className="rounded-3xl bg-emerald-600 px-6 py-6 text-xl font-bold text-white shadow-lg transition hover:bg-emerald-500"
             >
-              TAKE AWAY
+              TAKE OUT
             </button>
           </div>
 
@@ -493,7 +495,7 @@ function MenuPage() {
           <p className="mt-3 text-sm text-slate-600">
             {isKioskMode ? 'Touchscreen order station for walk-in guests.' : `${businessType} menu for customers.`}
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-700">Service: {serviceType}</p>
+          <p className="mt-2 text-sm font-semibold text-slate-700">Service: {getServiceTypeLabel(serviceType)}</p>
           {error && <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
         </header>
 
@@ -539,7 +541,7 @@ function MenuPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-amber-700">Order summary</p>
             <p className="mt-3 text-sm">Payment: {paymentMethod}</p>
             <p className="mt-2 text-sm">Source: {orderSource}</p>
-            <p className="mt-2 text-sm">Service: {serviceType}</p>
+            <p className="mt-2 text-sm">Service: {getServiceTypeLabel(serviceType)}</p>
           </div>
         </div>
 

@@ -1,3 +1,5 @@
+import { getServiceTypeLabel } from '../serviceType'
+
 const statusStyleMap = {
   received: 'bg-sky-100 text-sky-700',
   preparing: 'bg-amber-100 text-amber-700',
@@ -22,7 +24,7 @@ function OrderCard({ order, onStartPreparing, onMarkReady, onMarkWaste, isUpdati
 
       <p className="mt-2 text-xs text-slate-500">Ordered at {orderTime}</p>
       <div className="mt-3 space-y-1 text-xs text-slate-500">
-        <p>Service: {order.serviceType || 'N/A'}</p>
+        <p>Service: {getServiceTypeLabel(order.serviceType) || 'N/A'}</p>
         <p>Payment: {order.paymentMethod || 'N/A'}</p>
         <p>Source: {order.orderSource || 'Walk-in'}</p>
       </div>

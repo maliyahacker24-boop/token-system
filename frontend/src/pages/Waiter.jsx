@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadAdminConfigs, subscribeAdminConfigs } from '../adminStore'
 import { addItemsToOrder, loadOrders, subscribeOrders, updateOrderStatus } from '../orderStore'
+import { getServiceTypeLabel } from '../serviceType'
 
 const normalizeText = (value) => `${value || ''}`.trim().toLowerCase()
 
@@ -149,7 +150,7 @@ function Waiter() {
 
   const submitAddon = async () => {
     if (!selectedOrder) {
-      setError('Select a dine-in order first.')
+      setError('Select an eat-in order first.')
       return
     }
 
@@ -211,7 +212,7 @@ function Waiter() {
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-900">Open Dine-In Orders</h2>
+              <h2 className="text-xl font-black text-slate-900">Open Eat-In Orders</h2>
               <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
                 {activeDineInOrders.length} active
               </span>
@@ -219,7 +220,7 @@ function Waiter() {
 
             <div className="mt-5 space-y-3">
               {activeDineInOrders.length === 0 ? (
-                <div className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-500">No active dine-in tokens found.</div>
+                <div className="rounded-3xl bg-slate-50 p-5 text-sm text-slate-500">No active eat-in tokens found.</div>
               ) : (
                 activeDineInOrders.map((order) => (
                   <button
@@ -251,7 +252,7 @@ function Waiter() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Selected Order</p>
                     <h2 className="mt-2 text-3xl font-black text-slate-900">Token #{selectedOrder.token_number}</h2>
-                    <p className="mt-2 text-sm text-slate-600">{selectedOrder.businessName || 'Restro Token System'} • {selectedOrder.serviceType}</p>
+                    <p className="mt-2 text-sm text-slate-600">{selectedOrder.businessName || 'Restro Token System'} • {getServiceTypeLabel(selectedOrder.serviceType)}</p>
                   </div>
                   <div className="rounded-3xl bg-slate-50 px-4 py-3 text-right">
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Current items</p>
@@ -347,7 +348,7 @@ function Waiter() {
                 </div>
               </>
             ) : (
-              <div className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-500">Select a dine-in order from the left to add extra items.</div>
+              <div className="rounded-3xl bg-slate-50 p-6 text-sm text-slate-500">Select an eat-in order from the left to add extra items.</div>
             )}
           </section>
         </div>

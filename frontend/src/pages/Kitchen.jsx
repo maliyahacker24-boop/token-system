@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadOrders, subscribeOrders, updateOrderStatus } from '../orderStore'
+import { getServiceTypeLabel } from '../serviceType'
 
 function Kitchen() {
   const [orders, setOrders] = useState([])
@@ -54,7 +55,7 @@ function Kitchen() {
           <h2 className="mt-2 text-3xl font-black text-slate-900">Token #{order.token_number}</h2>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${order.serviceType === 'Take Away' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>
-          {order.serviceType || 'Walk-in'}
+          {getServiceTypeLabel(order.serviceType) || 'Walk-in'}
         </span>
       </div>
 

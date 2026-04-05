@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import OrderCard from '../components/OrderCard'
 import { loadOrders, subscribeOrders, updateOrderStatus } from '../orderStore'
+import { getServiceTypeLabel } from '../serviceType'
 
 function Dashboard() {
   const [orders, setOrders] = useState([])
@@ -88,8 +89,8 @@ function Dashboard() {
           {[
             { label: 'New Orders', value: summary.received || 0, tone: 'bg-sky-50 text-sky-700' },
             { label: 'Kitchen Running', value: summary.preparing || 0, tone: 'bg-amber-50 text-amber-700' },
-            { label: 'Take Away Ready', value: summary.takeAwayReady, tone: 'bg-emerald-50 text-emerald-700' },
-            { label: 'Dine In Active', value: summary.dineInActive, tone: 'bg-violet-50 text-violet-700' },
+            { label: `${getServiceTypeLabel('Take Away')} Ready`, value: summary.takeAwayReady, tone: 'bg-emerald-50 text-emerald-700' },
+            { label: `${getServiceTypeLabel('Dine In')} Active`, value: summary.dineInActive, tone: 'bg-violet-50 text-violet-700' },
           ].map((card) => (
             <article key={card.label} className={`rounded-3xl p-5 shadow-sm ring-1 ring-slate-200 ${card.tone}`}>
               <p className="text-xs font-semibold uppercase tracking-[0.18em]">{card.label}</p>
