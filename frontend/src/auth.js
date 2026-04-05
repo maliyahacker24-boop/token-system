@@ -1,6 +1,7 @@
 const AUTH_KEY = 'chaap-wala-admin-auth'
 const AUTH_CHANNEL = 'chaap-wala-admin-auth-channel'
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const DEFAULT_API_BASE_URL = 'https://token-system-production.up.railway.app'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '')
 const subscribers = new Set()
 const browserChannel =
   typeof window !== 'undefined' && 'BroadcastChannel' in window
@@ -27,10 +28,6 @@ browserChannel?.addEventListener('message', (event) => {
 export const isAdminLoggedIn = () => localStorage.getItem(AUTH_KEY) === 'true'
 
 export const loginAsAdmin = async (password) => {
-  if (!API_BASE_URL) {
-    throw new Error('VITE_API_BASE_URL missing. Add Railway backend URL in frontend env.')
-  }
-
   const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
     method: 'POST',
     headers: {
