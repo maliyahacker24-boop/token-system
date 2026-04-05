@@ -1,11 +1,93 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadOrders, subscribeOrders, updateOrderStatus } from '../orderStore'
 import { getServiceTypeLabel } from '../serviceType'
+
+const ALERT_SEQUENCE = [
+  { frequency: 1318.51, duration: 0.11, delay: 0 },
+  { frequency: 1567.98, duration: 0.14, delay: 0.16 },
+]
+
+const getAudioContextClass = () => {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  return window.AudioContext || window.webkitAudioContext || null
+}
+
+const playKitchenAlert = async (audioContextRef) => {
+  const AudioContextClass = getAudioContextClass()
+  if (!AudioContextClass) {
+    return false
+  }
+
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContextClass()
+  }
+
+  const audioContext = audioContextRef.current
+  if (audioContext.state === 'suspended') {
+    await audioContext.resume()
+  }
+
+  const startTime = audioContext.currentTime + 0.02
+
+  ALERT_SEQUENCE.forEach((step) => {
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+    const noteStart = startTime + step.delay
+    const noteEnd = noteStart + step.duration
+
+    oscillator.type = 'triangle'
+    oscillator.frequency.setValueAtTime(step.frequency, noteStart)
+
+    gainNode.gain.setValueAtTime(0.0001, noteStart)
+    gainNode.gain.exponentialRampToValueAtTime(0.18, noteStart + 0.02)
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, noteEnd)
+
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+    oscillator.start(noteStart)
+    oscillator.stop(noteEnd + 0.02)
+  })
+
+  return true
+}
 
 function Kitchen() {
   const [orders, setOrders] = useState([])
   const [error, setError] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(false)
+  const [alertMessage, setAlertMessage] = useState('')
+  const audioContextRef = useRef(null)
+  const previousReceivedIdsRef = useRef(new Set())
+  const hasInitializedOrdersRef = useRef(false)
+  const alertMessageTimerRef = useRef(null)
+
+  const enableKitchenSound = async () => {
+    try {
+      const AudioContextClass = getAudioContextClass()
+      if (!AudioContextClass) {
+        return false
+      }
+
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContextClass()
+      }
+
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
+      }
+
+      const isRunning = audioContextRef.current.state === 'running'
+      setSoundEnabled(isRunning)
+      return isRunning
+    } catch {
+      setSoundEnabled(false)
+      return false
+    }
+  }
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -18,6 +100,63 @@ function Kitchen() {
 
     return () => {
       unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    enableKitchenSound()
+
+    const unlockOnInteraction = () => {
+      enableKitchenSound()
+    }
+
+    const events = ['pointerdown', 'touchstart', 'keydown']
+    events.forEach((eventName) => window.addEventListener(eventName, unlockOnInteraction, { passive: true }))
+
+    return () => {
+      events.forEach((eventName) => window.removeEventListener(eventName, unlockOnInteraction))
+    }
+  }, [])
+
+  useEffect(() => {
+    const currentReceivedIds = new Set(
+      orders.filter((order) => order.status === 'received').map((order) => order.id),
+    )
+
+    if (!hasInitializedOrdersRef.current) {
+      previousReceivedIdsRef.current = currentReceivedIds
+      hasInitializedOrdersRef.current = true
+      return
+    }
+
+    const newReceivedOrders = orders.filter(
+      (order) => order.status === 'received' && !previousReceivedIdsRef.current.has(order.id),
+    )
+
+    if (newReceivedOrders.length > 0) {
+      const latestOrder = newReceivedOrders.sort((left, right) => right.token_number - left.token_number)[0]
+
+      playKitchenAlert(audioContextRef)
+        .then((played) => {
+          setSoundEnabled(played)
+        })
+        .catch(() => {
+          setSoundEnabled(false)
+        })
+
+      window.clearTimeout(alertMessageTimerRef.current)
+      setAlertMessage(`Trin trin - new token #${latestOrder.token_number} received.`)
+      alertMessageTimerRef.current = window.setTimeout(() => {
+        setAlertMessage('')
+      }, 4500)
+    }
+
+    previousReceivedIdsRef.current = currentReceivedIds
+  }, [orders])
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(alertMessageTimerRef.current)
     }
   }, [])
 
@@ -106,6 +245,18 @@ function Kitchen() {
             <p className="mt-3 max-w-2xl text-sm text-slate-300">
               This screen is designed for the kitchen display. New orders and currently preparing orders are shown separately.
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${soundEnabled ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-400/20' : 'bg-amber-500/15 text-amber-100 ring-1 ring-amber-300/20'}`}>
+                {soundEnabled ? 'Alert sound active' : 'Tap once to enable alert sound'}
+              </span>
+              <button
+                type="button"
+                onClick={enableKitchenSound}
+                className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/15"
+              >
+                Enable Sound
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-center">
             <div className="rounded-3xl bg-white/10 px-5 py-4 ring-1 ring-white/10">
@@ -120,6 +271,7 @@ function Kitchen() {
         </header>
 
         {error && <p className="mb-5 rounded-2xl bg-rose-100 px-4 py-3 text-sm text-rose-700">{error}</p>}
+  {alertMessage && <p className="mb-5 rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-900 ring-1 ring-amber-200">{alertMessage}</p>}
 
         <div className="grid gap-6 xl:grid-cols-2">
           <section>

@@ -10,8 +10,8 @@ function CheckoutUpsellModal({ isOpen, drinks, onAddDrink, onClose, onSkipChecko
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-5xl rounded-[2rem] bg-white p-6 shadow-[0_35px_120px_rgba(15,23,42,0.45)] ring-1 ring-slate-200 sm:p-8">
+    <div className="kiosk-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-8 backdrop-blur-sm">
+      <div className="kiosk-panel-rise w-full max-w-5xl rounded-[2rem] bg-white p-6 shadow-[0_35px_120px_rgba(15,23,42,0.45)] ring-1 ring-slate-200 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Checkout Add-On</p>

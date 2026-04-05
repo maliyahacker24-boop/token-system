@@ -23,6 +23,130 @@ body {
   min-height: 100vh;
 }
 
+@keyframes kiosk-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -20px, 0) scale(1.04);
+  }
+}
+
+@keyframes kiosk-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.18);
+  }
+
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 16px rgba(250, 204, 21, 0);
+  }
+}
+
+@keyframes kiosk-vertical-up {
+  0% {
+    transform: translateY(0%);
+  }
+
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes kiosk-vertical-down {
+  0% {
+    transform: translateY(-50%);
+  }
+
+  100% {
+    transform: translateY(0%);
+  }
+}
+
+@keyframes kiosk-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kiosk-panel-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes kiosk-grid-shift {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+
+  100% {
+    background-position: 0 120px, 120px 0;
+  }
+}
+
+.kiosk-orb-float {
+  animation: kiosk-float 8s ease-in-out infinite;
+}
+
+.touch-start-pulse {
+  animation: kiosk-pulse 2.4s ease-in-out infinite;
+}
+
+.kiosk-scroll-track {
+  will-change: transform;
+}
+
+.kiosk-scroll-up {
+  animation: kiosk-vertical-up 26s linear infinite;
+}
+
+.kiosk-scroll-down {
+  animation: kiosk-vertical-down 26s linear infinite;
+}
+
+.kiosk-fade-in {
+  animation: kiosk-fade-in 220ms ease-out;
+}
+
+.kiosk-panel-rise {
+  animation: kiosk-panel-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.kiosk-grid-sheen {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 120px 120px;
+  animation: kiosk-grid-shift 18s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-orb-float,
+  .touch-start-pulse,
+  .kiosk-scroll-up,
+  .kiosk-scroll-down,
+  .kiosk-fade-in,
+  .kiosk-panel-rise,
+  .kiosk-grid-sheen {
+    animation: none !important;
+  }
+}
+
 @media print {
   body {
     background: white !important;

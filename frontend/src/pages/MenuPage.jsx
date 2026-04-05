@@ -79,6 +79,23 @@ const DRINK_UPSELL_ITEMS = [
   },
 ]
 
+const KIOSK_IDLE_TIMEOUT_MS = 90000
+
+const KIOSK_PROMO_COLUMNS = [
+  [
+    { eyebrow: 'Chef Picks', title: 'Signature wraps', detail: 'Hot, fast, and tap-ready in one touch.' },
+    { eyebrow: 'Quick Order', title: 'Touch. Add. Checkout.', detail: 'Built for counter ordering without confusion.' },
+    { eyebrow: 'Most Loved', title: 'Cold drinks upsell', detail: 'Smart add-ons before payment for higher bills.' },
+    { eyebrow: 'Live Queue', title: 'Instant token flow', detail: 'Every order moves straight to kitchen and display.' },
+  ],
+  [
+    { eyebrow: 'Premium UI', title: 'Modern kiosk motion', detail: 'Smooth movement and bold contrast for public screens.' },
+    { eyebrow: 'Built To Sell', title: 'Large item cards', detail: 'Easy scanning for standing customers and staff.' },
+    { eyebrow: 'Fast Checkout', title: 'Cart always visible', detail: 'No hidden steps, no messy ordering path.' },
+    { eyebrow: 'Restaurant Ready', title: 'Runs all day', detail: 'Made for touch use at the counter and lobby.' },
+  ],
+]
+
 const generateOrderId = () =>
   window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -99,7 +116,32 @@ function MenuPage() {
   const [businessName, setBusinessName] = useState('Customer Menu')
   const [selectedBusinessId, setSelectedBusinessId] = useState('')
   const [isCheckoutUpsellOpen, setIsCheckoutUpsellOpen] = useState(false)
+  const [isKioskSessionActive, setIsKioskSessionActive] = useState(!isKioskMode)
   const receiptRef = useRef(null)
+  const kioskIdleTimerRef = useRef(null)
+
+  const clearKioskIdleTimer = () => {
+    if (kioskIdleTimerRef.current) {
+      window.clearTimeout(kioskIdleTimerRef.current)
+      kioskIdleTimerRef.current = null
+    }
+  }
+
+  const resetKioskExperience = () => {
+    clearKioskIdleTimer()
+    setIsCheckoutUpsellOpen(false)
+    setCartItems([])
+    setServiceType('')
+    setPaymentMethod('Cash')
+    setOrderSource('Kiosk')
+    setError('')
+    setIsKioskSessionActive(false)
+  }
+
+  const activateKioskExperience = () => {
+    setError('')
+    setIsKioskSessionActive(true)
+  }
 
   const applyBusinessConfig = (config) => {
     if (!config) {
@@ -151,6 +193,10 @@ function MenuPage() {
 
   useEffect(() => {
     setOrderSource(isKioskMode ? 'Kiosk' : 'Walk-in')
+  }, [isKioskMode])
+
+  useEffect(() => {
+    setIsKioskSessionActive(!isKioskMode)
   }, [isKioskMode])
 
   useEffect(() => {
@@ -214,6 +260,30 @@ function MenuPage() {
       window.clearTimeout(timer)
     }
   }, [receiptOrder])
+
+  useEffect(() => {
+    if (!isKioskMode || !isKioskSessionActive || receiptOrder) {
+      clearKioskIdleTimer()
+      return undefined
+    }
+
+    const handleActivity = () => {
+      clearKioskIdleTimer()
+      kioskIdleTimerRef.current = window.setTimeout(() => {
+        resetKioskExperience()
+      }, KIOSK_IDLE_TIMEOUT_MS)
+    }
+
+    handleActivity()
+
+    const events = ['pointerdown', 'touchstart', 'keydown', 'wheel']
+    events.forEach((eventName) => window.addEventListener(eventName, handleActivity, { passive: true }))
+
+    return () => {
+      events.forEach((eventName) => window.removeEventListener(eventName, handleActivity))
+      clearKioskIdleTimer()
+    }
+  }, [isKioskMode, isKioskSessionActive, receiptOrder])
 
   const totalPrice = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
@@ -428,12 +498,114 @@ function MenuPage() {
     )
   }
 
+  if (isKioskMode && !isKioskSessionActive) {
+    const summaryCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-[linear-gradient(160deg,#020617_0%,#0f172a_38%,#0b1120_100%)] text-white">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="kiosk-grid-sheen absolute inset-0 opacity-40" />
+          <div className="kiosk-orb-float absolute -left-20 top-16 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl" />
+          <div className="kiosk-orb-float absolute right-0 top-1/3 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl" style={{ animationDelay: '1.6s' }} />
+          <div className="kiosk-orb-float absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-emerald-400/12 blur-3xl" style={{ animationDelay: '0.8s' }} />
+        </div>
+
+        <div className="pointer-events-none absolute inset-y-0 left-4 hidden w-56 overflow-hidden xl:block">
+          <div className="kiosk-scroll-track kiosk-scroll-down space-y-4 py-6">
+            {[...KIOSK_PROMO_COLUMNS[0], ...KIOSK_PROMO_COLUMNS[0]].map((promo, index) => (
+              <article key={`${promo.title}-${index}`} className="rounded-[1.7rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-200">{promo.eyebrow}</p>
+                <h3 className="mt-3 text-2xl font-black text-white">{promo.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{promo.detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-y-0 right-4 hidden w-56 overflow-hidden xl:block">
+          <div className="kiosk-scroll-track kiosk-scroll-up space-y-4 py-6">
+            {[...KIOSK_PROMO_COLUMNS[1], ...KIOSK_PROMO_COLUMNS[1]].map((promo, index) => (
+              <article key={`${promo.title}-${index}`} className="rounded-[1.7rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-200">{promo.eyebrow}</p>
+                <h3 className="mt-3 text-2xl font-black text-white">{promo.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{promo.detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <section className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-10 sm:px-6">
+          <div className="kiosk-panel-rise w-full max-w-3xl rounded-[2.5rem] border border-white/10 bg-white/8 p-6 text-center shadow-[0_30px_120px_rgba(2,6,23,0.5)] backdrop-blur-2xl sm:p-10">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-[linear-gradient(135deg,#fde68a_0%,#facc15_50%,#f59e0b_100%)] text-3xl font-black text-slate-950 shadow-[0_14px_34px_rgba(250,204,21,0.28)] sm:h-28 sm:w-28">
+              RT
+            </div>
+
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.36em] text-sky-200">Premium Self Ordering</p>
+            <h1 className="mt-4 text-4xl font-black leading-tight text-white sm:text-6xl">
+              Touch Here To Start
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-slate-300 sm:text-base">
+              A public-facing counter ordering experience with animated motion, large touch targets, fast checkout, and live token routing.
+            </p>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {[
+                { label: 'Fast Flow', value: 'Tap to build the order in seconds' },
+                { label: 'Live Queue', value: 'Kitchen and display update instantly' },
+                { label: 'Premium UI', value: 'Designed for walk-in self service' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[1.5rem] border border-white/10 bg-white/6 px-4 py-4 text-left backdrop-blur">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200">{item.label}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={activateKioskExperience}
+              className="touch-start-pulse mt-10 inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#fde68a_0%,#facc15_50%,#f59e0b_100%)] px-10 py-5 text-lg font-black text-slate-950 shadow-[0_18px_44px_rgba(250,204,21,0.24)] transition hover:scale-[1.02]"
+            >
+              Touch Here To Start
+            </button>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <span>Self order kiosk</span>
+              <span className="h-1 w-1 rounded-full bg-slate-500" />
+              <span>{businessName}</span>
+              <span className="h-1 w-1 rounded-full bg-slate-500" />
+              <span>{summaryCount > 0 ? `${summaryCount} items waiting` : 'Ready for new order'}</span>
+            </div>
+
+            {availableBusinesses.length > 1 && (
+              <div className="mt-8 rounded-[1.7rem] border border-white/10 bg-white/6 p-4 text-left backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Select restaurant</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {availableBusinesses.map((business) => (
+                    <button
+                      key={business.id}
+                      type="button"
+                      onClick={() => applyBusinessConfig(business)}
+                      className={`rounded-full px-4 py-3 text-sm font-semibold transition ${selectedBusinessId === business.id ? 'bg-white text-slate-950' : 'bg-white/8 text-white hover:bg-white/15'}`}
+                    >
+                      {business.businessName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   if (!serviceType) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-amber-100 px-4 py-10">
-        <section className="mx-auto max-w-4xl rounded-3xl bg-white p-10 shadow-xl ring-1 ring-slate-200 text-center">
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.2),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.18),_transparent_26%),linear-gradient(135deg,#fff7ed_0%,#f8fafc_48%,#eff6ff_100%)] px-4 py-8 sm:px-6">
+        <section className="kiosk-panel-rise mx-auto max-w-5xl rounded-[2.25rem] border border-white/70 bg-white/85 p-6 shadow-[0_28px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur sm:p-10">
           {isKioskMode && availableBusinesses.length > 1 && (
-            <div className="mb-8 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left">
+            <div className="mb-8 rounded-[1.8rem] border border-slate-200 bg-slate-50/90 p-5 text-left">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Select restaurant</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {availableBusinesses.map((business) => (
@@ -441,7 +613,7 @@ function MenuPage() {
                     key={business.id}
                     type="button"
                     onClick={() => applyBusinessConfig(business)}
-                    className={`rounded-3xl px-5 py-4 text-left transition ${selectedBusinessId === business.id ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-slate-100'}`}
+                    className={`rounded-[1.45rem] px-5 py-4 text-left transition ${selectedBusinessId === business.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-slate-100'}`}
                   >
                     <p className="text-lg font-black">{business.businessName}</p>
                     <p className="mt-1 text-sm opacity-75">{business.businessType}</p>
@@ -451,32 +623,36 @@ function MenuPage() {
             </div>
           )}
 
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">Please choose</p>
-          <h1 className="mt-6 text-4xl font-black text-slate-900">Eat In or Take Out?</h1>
-          <p className="mt-4 text-lg leading-8 text-slate-600">
-            Choose Eat In if the customer will have the food here.
-            <br />
-            Choose Take Out if the order should be packed to go.
-          </p>
+          <div className="rounded-[1.9rem] bg-[linear-gradient(135deg,#111827_0%,#0f172a_55%,#1d4ed8_100%)] px-6 py-8 text-center text-white shadow-[0_18px_60px_rgba(15,23,42,0.28)] sm:px-10 sm:py-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.34em] text-sky-200">Please choose</p>
+            <h1 className="mt-6 text-4xl font-black sm:text-5xl">Eat In or Take Out?</h1>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-slate-200 sm:text-lg">
+              Use this touch-friendly screen to start the order fast, then tap menu items just like a self-order kiosk.
+            </p>
+          </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setServiceType('Dine In')}
-              className="rounded-3xl bg-slate-900 px-6 py-6 text-xl font-bold text-white shadow-lg transition hover:bg-slate-700"
+              className="rounded-[1.8rem] border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
-              EAT IN
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Inside dining</p>
+              <p className="mt-4 text-3xl font-black text-slate-900">EAT IN</p>
+              <p className="mt-3 text-sm leading-7 text-slate-600">Select this when the customer will sit and eat at the table or inside the restaurant.</p>
             </button>
             <button
               type="button"
               onClick={() => setServiceType('Take Away')}
-              className="rounded-3xl bg-emerald-600 px-6 py-6 text-xl font-bold text-white shadow-lg transition hover:bg-emerald-500"
+              className="rounded-[1.8rem] border border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5_0%,#d1fae5_48%,#f0fdf4_100%)] p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
-              TAKE OUT
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">Packed order</p>
+              <p className="mt-4 text-3xl font-black text-slate-900">TAKE OUT</p>
+              <p className="mt-3 text-sm leading-7 text-slate-700">Select this when the order should be packed for pickup or takeaway.</p>
             </button>
           </div>
 
-          <p className="mt-8 text-sm text-slate-500">
+          <p className="mt-8 text-center text-sm text-slate-500">
             Select one option before you can continue to the menu.
           </p>
         </section>
@@ -485,68 +661,111 @@ function MenuPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-amber-100 px-4 py-10">
-      <section className="mx-auto max-w-6xl rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
-        <header className="mb-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Customer Menu</p>
-          <h1 className="mt-2 text-4xl font-black text-slate-900">
-            {isKioskMode ? `${businessName} Touch Ordering` : businessName}
-          </h1>
-          <p className="mt-3 text-sm text-slate-600">
-            {isKioskMode ? 'Touchscreen order station for walk-in guests.' : `${businessType} menu for customers.`}
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-700">Service: {getServiceTypeLabel(serviceType)}</p>
-          {error && <p className="mt-3 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
-        </header>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.16),_transparent_24%),linear-gradient(135deg,#fff7ed_0%,#f8fafc_48%,#eff6ff_100%)] px-3 py-4 sm:px-4 sm:py-6">
+      <section className="mx-auto max-w-[1600px] space-y-5">
+        <header className="kiosk-panel-rise overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#111827_0%,#0f172a_55%,#1d4ed8_100%)] p-6 text-white shadow-[0_24px_80px_rgba(15,23,42,0.2)] sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-200">Customer Ordering</p>
+              <h1 className="mt-3 text-3xl font-black sm:text-5xl">
+                {isKioskMode ? `${businessName} Touch Ordering` : businessName}
+              </h1>
+              <p className="mt-3 text-sm leading-7 text-slate-200 sm:text-base">
+                {isKioskMode ? 'Touchscreen ordering layout inspired by modern self-service kiosks.' : `${businessType} menu for customers with a fast tap-to-order flow.`}
+              </p>
+            </div>
 
-        <div className="mb-8 grid gap-4 xl:grid-cols-[1.6fr_0.95fr]">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-            <h2 className="text-lg font-bold text-slate-900">Payment & Source</h2>
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-500">Payment Method</p>
-                <div className="mt-3 flex flex-wrap gap-3">
-                  {['Cash', 'Prepaid'].map((method) => (
-                    <button
-                      key={method}
-                      type="button"
-                      onClick={() => setPaymentMethod(method)}
-                      className={`rounded-3xl px-5 py-4 text-sm font-semibold transition ${paymentMethod === method ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'}`}
-                    >
-                      {method}
-                    </button>
-                  ))}
-                </div>
+            <div className="grid min-w-[220px] grid-cols-2 gap-3">
+              <div className="rounded-[1.25rem] bg-white/10 px-4 py-3 ring-1 ring-white/10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">Service</p>
+                <p className="mt-2 text-xl font-black">{getServiceTypeLabel(serviceType)}</p>
               </div>
-
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-500">Order Source</p>
-                <div className="mt-3 flex flex-wrap gap-3">
-                  {[(isKioskMode ? 'Kiosk' : 'Walk-in'), 'Swiggy', 'Zomato', 'Other'].map((source) => (
-                    <button
-                      key={source}
-                      type="button"
-                      onClick={() => setOrderSource(source)}
-                      className={`rounded-3xl px-5 py-4 text-sm font-semibold transition ${orderSource === source ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'}`}
-                    >
-                      {source}
-                    </button>
-                  ))}
-                </div>
+              <div className="rounded-[1.25rem] bg-white/10 px-4 py-3 ring-1 ring-white/10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">Menu Items</p>
+                <p className="mt-2 text-xl font-black">{menuItems.length}</p>
+              </div>
+              <div className="rounded-[1.25rem] bg-white/10 px-4 py-3 ring-1 ring-white/10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">Cart Qty</p>
+                <p className="mt-2 text-xl font-black">{cartItems.reduce((sum, item) => sum + item.quantity, 0)}</p>
+              </div>
+              <div className="rounded-[1.25rem] bg-white/10 px-4 py-3 ring-1 ring-white/10">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">Order Value</p>
+                <p className="mt-2 text-xl font-black">₹{totalPrice}</p>
               </div>
             </div>
           </div>
+        </header>
 
-          <div className="rounded-3xl border border-amber-100 bg-amber-50 p-6 text-slate-700">
-            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-amber-700">Order summary</p>
-            <p className="mt-3 text-sm">Payment: {paymentMethod}</p>
-            <p className="mt-2 text-sm">Source: {orderSource}</p>
-            <p className="mt-2 text-sm">Service: {getServiceTypeLabel(serviceType)}</p>
+        {error && <p className="rounded-[1.4rem] bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 shadow-sm ring-1 ring-rose-100">{error}</p>}
+
+        {isKioskMode && availableBusinesses.length > 1 && (
+          <section className="rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-sm ring-1 ring-slate-200/70 backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Restaurant</p>
+                <p className="mt-2 text-sm text-slate-600">Switch the active kiosk menu before placing the order.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {availableBusinesses.map((business) => (
+                  <button
+                    key={business.id}
+                    type="button"
+                    onClick={() => applyBusinessConfig(business)}
+                    className={`rounded-full px-4 py-3 text-sm font-semibold transition ${selectedBusinessId === business.id ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    {business.businessName}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="kiosk-panel-rise rounded-[1.8rem] border border-white/70 bg-white/80 p-4 shadow-sm ring-1 ring-slate-200/70 backdrop-blur sm:p-5" style={{ animationDelay: '120ms' }}>
+          <div className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr_0.7fr]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Payment Method</p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {['Cash', 'Prepaid'].map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setPaymentMethod(method)}
+                    className={`rounded-full px-5 py-3 text-sm font-semibold transition ${paymentMethod === method ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Order Source</p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {[(isKioskMode ? 'Kiosk' : 'Walk-in'), 'Swiggy', 'Zomato', 'Other'].map((source) => (
+                  <button
+                    key={source}
+                    type="button"
+                    onClick={() => setOrderSource(source)}
+                    className={`rounded-full px-5 py-3 text-sm font-semibold transition ${orderSource === source ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}
+                  >
+                    {source}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[1.4rem] bg-[linear-gradient(135deg,#fff7ed_0%,#fffbeb_100%)] px-5 py-4 ring-1 ring-amber-100">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">Session Summary</p>
+              <p className="mt-3 text-sm text-slate-700">Service: {getServiceTypeLabel(serviceType)}</p>
+              <p className="mt-2 text-sm text-slate-700">Payment: {paymentMethod}</p>
+              <p className="mt-2 text-sm text-slate-700">Source: {orderSource}</p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
-          <Menu items={menuItems} onAddToCart={addToCart} />
+        <div className="kiosk-panel-rise grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]" style={{ animationDelay: '220ms' }}>
+          <Menu items={menuItems} onAddToCart={addToCart} businessName={businessName} />
           <Cart
             cartItems={cartItems}
             totalPrice={totalPrice}
@@ -554,6 +773,10 @@ function MenuPage() {
             onDecrement={decrementQty}
             onPlaceOrder={openCheckoutUpsell}
             isPlacingOrder={isPlacingOrder}
+            businessName={businessName}
+            serviceLabel={getServiceTypeLabel(serviceType)}
+            paymentMethod={paymentMethod}
+            orderSource={orderSource}
           />
         </div>
       </section>
