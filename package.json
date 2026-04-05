@@ -1,0 +1,11 @@
+{
+  "name": "chaap-wala-monorepo",
+  "private": true,
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "start": "npm --workspace backend start",
+    "dev": "npm --workspace backend run dev"
+  }
+}
