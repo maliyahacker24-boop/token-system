@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import Cart from '../components/Cart'
+import CheckoutUpsellModal from '../components/CheckoutUpsellModal'
 import Menu from '../components/Menu'
 import { getLatestOrder, saveOrder } from '../orderStore'
 import { loadAdminConfigs, subscribeAdminConfigs } from '../adminStore'
@@ -12,6 +13,69 @@ const MENU_ITEMS = [
   { id: 'burger', name: 'Burger', price: 80 },
   { id: 'chowmein', name: 'Chowmein', price: 90 },
   { id: 'cold-drink', name: 'Cold Drink', price: 30 },
+]
+
+const createDrinkImage = (label, fillColor, accentColor, bubbleColor) => {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="${label}">
+      <defs>
+        <linearGradient id="drink-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${fillColor}" />
+          <stop offset="100%" stop-color="${accentColor}" />
+        </linearGradient>
+      </defs>
+      <rect width="240" height="240" rx="48" fill="#ffffff" fill-opacity="0" />
+      <circle cx="62" cy="64" r="14" fill="${bubbleColor}" fill-opacity="0.28" />
+      <circle cx="182" cy="54" r="10" fill="${bubbleColor}" fill-opacity="0.22" />
+      <circle cx="175" cy="95" r="7" fill="${bubbleColor}" fill-opacity="0.34" />
+      <path d="M96 42h48l9 24v12c0 6-5 11-11 11h-4v88c0 11-8 21-19 21h-2c-11 0-19-10-19-21V89h-4c-6 0-11-5-11-11V66l13-24z" fill="url(#drink-gradient)" />
+      <rect x="103" y="26" width="34" height="20" rx="7" fill="${accentColor}" />
+      <rect x="104" y="97" width="32" height="54" rx="10" fill="#ffffff" fill-opacity="0.18" />
+      <text x="120" y="125" text-anchor="middle" font-size="16" font-family="Arial, sans-serif" font-weight="700" fill="#ffffff">${label}</text>
+      <rect x="86" y="170" width="68" height="10" rx="5" fill="#ffffff" fill-opacity="0.22" />
+    </svg>
+  `
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+const DRINK_UPSELL_ITEMS = [
+  {
+    id: 'sprite-250ml',
+    name: 'Sprite 250ml',
+    price: 40,
+    description: 'Lemon-lime cold drink served chilled.',
+    badge: 'Most Popular',
+    imageBackground: 'bg-[radial-gradient(circle_at_top,#dcfce7_0%,#86efac_40%,#16a34a_100%)]',
+    image: createDrinkImage('SPRITE', '#22c55e', '#15803d', '#dcfce7'),
+  },
+  {
+    id: 'coca-cola-250ml',
+    name: 'Coca-Cola 250ml',
+    price: 45,
+    description: 'Classic cola with a strong fizz kick.',
+    badge: 'Best Seller',
+    imageBackground: 'bg-[radial-gradient(circle_at_top,#fee2e2_0%,#fca5a5_38%,#b91c1c_100%)]',
+    image: createDrinkImage('COLA', '#ef4444', '#991b1b', '#fee2e2'),
+  },
+  {
+    id: 'thums-up-250ml',
+    name: 'Thums Up 250ml',
+    price: 45,
+    description: 'Bold sparkling cola for spicy meals.',
+    badge: 'Strong Taste',
+    imageBackground: 'bg-[radial-gradient(circle_at_top,#dbeafe_0%,#93c5fd_38%,#1d4ed8_100%)]',
+    image: createDrinkImage('THUMS', '#2563eb', '#1e3a8a', '#dbeafe'),
+  },
+  {
+    id: 'fanta-250ml',
+    name: 'Fanta 250ml',
+    price: 40,
+    description: 'Sweet orange soft drink for combo upsell.',
+    badge: 'Kids Choice',
+    imageBackground: 'bg-[radial-gradient(circle_at_top,#fed7aa_0%,#fdba74_38%,#ea580c_100%)]',
+    image: createDrinkImage('FANTA', '#f97316', '#c2410c', '#ffedd5'),
+  },
 ]
 
 const generateOrderId = () =>
@@ -33,6 +97,7 @@ function MenuPage() {
   const [businessType, setBusinessType] = useState('Restaurant')
   const [businessName, setBusinessName] = useState('Customer Menu')
   const [selectedBusinessId, setSelectedBusinessId] = useState('')
+  const [isCheckoutUpsellOpen, setIsCheckoutUpsellOpen] = useState(false)
   const receiptRef = useRef(null)
 
   const applyBusinessConfig = (config) => {
@@ -185,6 +250,20 @@ function MenuPage() {
     )
   }
 
+  const openCheckoutUpsell = () => {
+    if (cartItems.length === 0) {
+      setError('Please add at least one item to place the order.')
+      return
+    }
+
+    setError('')
+    setIsCheckoutUpsellOpen(true)
+  }
+
+  const closeCheckoutUpsell = () => {
+    setIsCheckoutUpsellOpen(false)
+  }
+
   const placeOrder = async () => {
     if (cartItems.length === 0) {
       setError('Please add at least one item to place the order.')
@@ -193,6 +272,7 @@ function MenuPage() {
 
     setError('')
     setIsPlacingOrder(true)
+    setIsCheckoutUpsellOpen(false)
 
     try {
       const { data: latestOrderData } = await getLatestOrder()
@@ -470,11 +550,21 @@ function MenuPage() {
             totalPrice={totalPrice}
             onIncrement={incrementQty}
             onDecrement={decrementQty}
-            onPlaceOrder={placeOrder}
+            onPlaceOrder={openCheckoutUpsell}
             isPlacingOrder={isPlacingOrder}
           />
         </div>
       </section>
+
+      <CheckoutUpsellModal
+        isOpen={isCheckoutUpsellOpen}
+        drinks={DRINK_UPSELL_ITEMS}
+        onAddDrink={addToCart}
+        onClose={closeCheckoutUpsell}
+        onSkipCheckout={placeOrder}
+        onContinue={placeOrder}
+        isPlacingOrder={isPlacingOrder}
+      />
     </main>
   )
 }

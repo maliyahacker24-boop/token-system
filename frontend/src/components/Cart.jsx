@@ -53,7 +53,7 @@ function Cart({ cartItems, totalPrice, onIncrement, onDecrement, onPlaceOrder, i
         disabled={isPlacingOrder}
         className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
       >
-        {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
+        {isPlacingOrder ? 'Placing Order...' : 'Proceed to Checkout'}
       </button>
     </section>
   )
