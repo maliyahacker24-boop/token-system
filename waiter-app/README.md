@@ -1,12 +1,12 @@
 # Chaap Wala Waiter App
 
-Expo based Android app for waiter staff. Waiter login karta hai, dine-in token select karta hai, extra items add karta hai, aur order Supabase `orders` table me update ho jata hai. Existing web dashboard, kitchen screen, waiter web screen, aur display screen ko wahi updated order milta hai.
+Expo-based Android app for waiter staff. A waiter logs in, selects a dine-in token, adds extra items, and updates the same order in the Supabase `orders` table. The updated order is then reflected on the web dashboard, kitchen screen, waiter web screen, and display screen.
 
-## Kya kya chahiye
+## Requirements
 
-1. Node.js 20 ya uske upar
-2. Android phone me Expo Go app, ya Android Studio emulator
-3. Same Supabase project jisme `orders` table bana hua ho
+1. Node.js 20 or later
+2. An Android phone with Expo Go, or an Android Studio emulator
+3. The same Supabase project where the `orders` table is available
 4. `waiter-app/.env` file with these keys:
 
 ```env
@@ -17,30 +17,30 @@ EXPO_PUBLIC_WAITER_PASSWORD=waiter123
 
 ## Setup
 
-1. `waiter-app` folder me jao.
-2. `.env.example` ko `.env` me copy karo.
-3. `npm install` chalao.
-4. `npm run start` chalao.
-5. Expo Go se QR scan karo ya terminal me `a` dabakar Android emulator kholo.
+1. Go to the `waiter-app` folder.
+2. Copy `.env.example` to `.env`.
+3. Run `npm install`.
+4. Run `npm run start`.
+5. Scan the QR code with Expo Go, or press `a` in the terminal to open the Android emulator.
 
-## App me kya hai
+## Features
 
 1. Waiter login screen with password
-2. Live active dine-in token list
+2. Startup-safe login shell, then manual live order connect
 3. Selected token detail
 4. Quick add from existing items
 5. Manual item add with name, price, qty
-6. Add-on cart aur one tap update
-7. Supabase realtime plus polling fallback
+6. Add-on cart and one-tap update
+7. Supabase polling-based sync after connect
 
 ## Important note
 
-Abhi login simple waiter password based hai. Production me alag waiter accounts chahiye hon to next step me Supabase Auth ya dedicated waiter table add karni hogi.
+The current login system uses a shared waiter password. If separate waiter accounts are needed in production, the next step should be Supabase Auth or a dedicated waiter table.
 
-## APK banana ho to
+## Building an APK
 
 1. `npm install -g eas-cli`
 2. `eas login`
 3. `eas build -p android --profile preview`
 
-`preview` profile APK banata hai jo direct install ho sakta hai.
+The `preview` profile generates an APK that can be installed directly.

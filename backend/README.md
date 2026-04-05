@@ -22,7 +22,7 @@ npm run dev
 - `GET /health`
 - `POST /api/admin/login`
 
-`FRONTEND_ORIGIN` me comma-separated origins de sakte ho.
+`FRONTEND_ORIGIN` can contain comma-separated origins.
 
 Example:
 

@@ -1,6 +1,3 @@
-import 'react-native-url-polyfill/auto'
-import { createClient } from '@supabase/supabase-js'
-
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 const ORDER_POLL_INTERVAL_MS = 5000
@@ -11,14 +8,38 @@ export const configurationError = isSupabaseConfigured
   ? ''
   : 'Supabase keys missing. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in waiter-app/.env.'
 
-const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    })
-  : null
+const buildHeaders = (extraHeaders = {}) => ({
+  apikey: supabaseAnonKey,
+  Authorization: `Bearer ${supabaseAnonKey}`,
+  ...extraHeaders,
+})
+
+const parseErrorResponse = async (response, fallbackMessage) => {
+  try {
+    const data = await response.json()
+    return data?.message || data?.error || fallbackMessage
+  } catch {
+    return fallbackMessage
+  }
+}
+
+const request = async (path, options = {}) => {
+  const response = await fetch(`${supabaseUrl}/rest/v1${path}`, {
+    ...options,
+    headers: buildHeaders(options.headers),
+  })
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Supabase request failed.')
+    throw new Error(message)
+  }
+
+  if (response.status === 204) {
+    return null
+  }
+
+  return response.json()
+}
 
 const normalizeItems = (items = []) =>
   (Array.isArray(items) ? items : []).map((item) => ({
@@ -69,36 +90,22 @@ const sortOrders = (orders = []) =>
     .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
 
 const ensureConfigured = () => {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured) {
     throw new Error(configurationError)
   }
 }
 
 export const loadOrders = async () => {
   ensureConfigured()
-
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    throw new Error(error.message || 'Orders load failed.')
-  }
-
+  const data = await request('/orders?select=*&order=created_at.desc')
   return sortOrders(data || [])
 }
 
 const loadOrderById = async (orderId) => {
   ensureConfigured()
-
-  const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single()
-
-  if (error) {
-    throw new Error(error.message || 'Order load failed.')
-  }
-
-  return sortOrders([data])[0] || null
+  const encodedOrderId = encodeURIComponent(orderId)
+  const data = await request(`/orders?select=*&id=eq.${encodedOrderId}&limit=1`)
+  return sortOrders(data || [])[0] || null
 }
 
 const mergeOrderItems = (currentItems = [], additionalItems = []) => {
@@ -126,6 +133,7 @@ const mergeOrderItems = (currentItems = [], additionalItems = []) => {
 }
 
 export const addItemsToOrder = async (orderId, additionalItems) => {
+  ensureConfigured()
   const order = await loadOrderById(orderId)
 
   if (!order) {
@@ -135,57 +143,50 @@ export const addItemsToOrder = async (orderId, additionalItems) => {
   const nextItems = mergeOrderItems(order.items, additionalItems)
   const nextStatus = order.status === 'ready' ? 'preparing' : order.status
 
-  const { data, error } = await supabase
-    .from('orders')
-    .update({
+  const encodedOrderId = encodeURIComponent(orderId)
+  const data = await request(`/orders?id=eq.${encodedOrderId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify({
       items: nextItems,
       total_price: calculateTotalPrice(nextItems),
       status: nextStatus,
-    })
-    .eq('id', orderId)
-    .select('*')
-    .single()
+    }),
+  })
 
-  if (error) {
-    throw new Error(error.message || 'Add-on update failed.')
-  }
-
-  return sortOrders([data])[0] || null
+  return sortOrders(data || [])[0] || null
 }
 
 export const subscribeOrders = (listener) => {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured) {
     return () => {}
   }
+
+  let isActive = true
 
   const emitLatest = async () => {
     try {
       const orders = await loadOrders()
-      listener(orders)
-    } catch {
+      if (isActive) {
+        listener(orders)
+      }
+    } catch (error) {
+      console.error('Waiter order polling failed:', error)
       return undefined
     }
 
     return undefined
   }
 
-  const channel = supabase
-    .channel('mobile:orders-live')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'orders' },
-      async () => {
-        await emitLatest()
-      },
-    )
-    .subscribe()
-
   const pollTimer = setInterval(() => {
     emitLatest()
   }, ORDER_POLL_INTERVAL_MS)
 
   return () => {
+    isActive = false
     clearInterval(pollTimer)
-    supabase.removeChannel(channel)
   }
 }
