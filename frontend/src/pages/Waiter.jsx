@@ -149,12 +149,12 @@ function Waiter() {
 
   const submitAddon = async () => {
     if (!selectedOrder) {
-      setError('Pehle dine-in order select karo.')
+      setError('Select a dine-in order first.')
       return
     }
 
     if (addonItems.length === 0) {
-      setError('Kam se kam ek extra item add karo.')
+      setError('Add at least one extra item.')
       return
     }
 
@@ -173,9 +173,9 @@ function Waiter() {
       }
 
       setAddonItems([])
-      setMessage(`Token #${selectedOrder.token_number} mein extra items add ho gaye.`)
+      setMessage(`Extra items were added to token #${selectedOrder.token_number}.`)
     } catch (submitError) {
-      setError(submitError?.message || 'Extra items add nahi ho paye.')
+      setError(submitError?.message || 'Failed to add extra items.')
     } finally {
       setIsSaving(false)
     }
@@ -189,7 +189,7 @@ function Waiter() {
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600">Waiter Mode</p>
             <h1 className="mt-2 text-4xl font-black text-slate-900">Add Items to Existing Table Order</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              Agar customer dusri baar roti, drink, ya koi extra item mangata hai to waiter isi screen se same token order mein add kar sakta hai.
+              If a customer requests extra bread, drinks, or additional items later, the waiter can add them to the same token from this screen.
             </p>
           </div>
 
@@ -230,7 +230,7 @@ function Waiter() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.16em] opacity-70">{order.businessName || 'Chaap Wala'}</p>
+                        <p className="text-xs uppercase tracking-[0.16em] opacity-70">{order.businessName || 'Restro Token System'}</p>
                         <p className="mt-2 text-2xl font-black">Token #{order.token_number}</p>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${selectedOrderId === order.id ? 'bg-white/15 text-white' : 'bg-amber-100 text-amber-700'}`}>
@@ -251,7 +251,7 @@ function Waiter() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Selected Order</p>
                     <h2 className="mt-2 text-3xl font-black text-slate-900">Token #{selectedOrder.token_number}</h2>
-                    <p className="mt-2 text-sm text-slate-600">{selectedOrder.businessName || 'Chaap Wala'} • {selectedOrder.serviceType}</p>
+                    <p className="mt-2 text-sm text-slate-600">{selectedOrder.businessName || 'Restro Token System'} • {selectedOrder.serviceType}</p>
                   </div>
                   <div className="rounded-3xl bg-slate-50 px-4 py-3 text-right">
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Current items</p>
@@ -274,12 +274,12 @@ function Waiter() {
                   <h3 className="text-lg font-black text-slate-900">Add More Items</h3>
                   {!selectedConfig && availableAddonItems.length > 0 && (
                     <p className="mt-2 text-sm text-amber-700">
-                      Is order ka saved menu config nahi mila, isliye existing items ko quick add-on ke liye dikhaya gaya hai.
+                      No saved menu configuration was found for this order, so the existing items are shown as quick add-on options.
                     </p>
                   )}
                   {availableAddonItems.length === 0 ? (
                     <div className="mt-4 rounded-3xl bg-slate-50 p-5 text-sm text-slate-500 ring-1 ring-slate-200">
-                      Is token ke liye add-on menu nahi mila. Pehle Admin mein business menu save karo ya kiosk se correct business select karke order lo.
+                      No add-on menu was found for this token. Save the business menu in Admin first, or place the order from the correct business in the kiosk flow.
                     </div>
                   ) : (
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -306,7 +306,7 @@ function Waiter() {
 
                   <div className="mt-4 space-y-3">
                     {addonItems.length === 0 ? (
-                      <p className="text-sm text-slate-500">Abhi koi extra item select nahi hua.</p>
+                      <p className="text-sm text-slate-500">No extra items selected yet.</p>
                     ) : (
                       addonItems.map((item) => (
                         <div key={item.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-amber-100">

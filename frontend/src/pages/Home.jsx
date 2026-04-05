@@ -54,47 +54,47 @@ function Home() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.16),_transparent_30%),linear-gradient(135deg,#fff7ed_0%,#f8fafc_52%,#ecfdf5_100%)] px-4 py-8">
       <section className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-[2rem] bg-white p-8 shadow-xl ring-1 ring-slate-200">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-600">Chaap Wala Ops</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-600">Restro Token System</p>
           <h1 className="mt-3 text-4xl font-black text-slate-900 sm:text-5xl">One system, five screens</h1>
           <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600">
-            Is setup mein alag-alag device roles hain: customer touch ordering, waiter add-on app, kitchen queue screen, outside takeaway token LED, aur owner command center.
+            This setup supports multiple device roles: customer touch ordering, a waiter add-on app, a kitchen queue screen, an outside pickup token display, and an owner command center.
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {[
               {
                 title: 'Customer Touch Screen',
-                copy: 'Counter ya LED touch display par customer khud order add kare.',
+                copy: 'Customers can place orders directly from a counter tablet or touch display.',
                 to: '/kiosk',
                 tone: 'bg-slate-900 text-white',
               },
               {
                 title: 'Waiter Add-on App',
-                copy: '2nd time roti ya extra item same token mein add karo.',
+                copy: 'Add repeat items or extras to the same token from the waiter workflow.',
                 to: '/waiter',
                 tone: 'bg-amber-500 text-white',
               },
               {
                 title: 'Kitchen Screen',
-                copy: 'Received aur preparing orders ko live queue mein dekho.',
+                copy: 'Track received and preparing orders in one live kitchen queue.',
                 to: '/kitchen',
                 tone: 'bg-white text-slate-900 ring-1 ring-slate-200',
               },
               {
                 title: 'Outside Token LED',
-                copy: 'Packing / takeaway customers ke liye ready token display.',
+                copy: 'Show ready pickup tokens clearly for takeaway customers.',
                 to: '/display',
                 tone: 'bg-emerald-600 text-white',
               },
               {
                 title: 'Owner Dashboard',
-                copy: 'Malik ke liye live orders, control links, analytics aur menu management.',
+                copy: 'Manage live orders, control links, analytics, and menu setup from one place.',
                 to: '/dashboard',
                 tone: 'bg-slate-700 text-white',
               },
               {
                 title: 'Menu Setup',
-                copy: 'Business name, items aur rates yahan manage hote hain.',
+                copy: 'Configure business names, menu items, and pricing here.',
                 to: '/admin',
                 tone: 'bg-white text-slate-900 ring-1 ring-slate-200',
               },

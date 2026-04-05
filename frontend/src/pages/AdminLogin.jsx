@@ -51,7 +51,7 @@ function AdminLogin() {
         </form>
 
         <p className="mt-5 text-xs text-slate-400">
-          Admin password ab Railway backend env se control hota hai.
+          The admin password is controlled by the Railway backend environment variables.
         </p>
       </section>
     </main>

@@ -59,7 +59,7 @@ function Display() {
               <div className="inline-flex rounded-full bg-orange-500 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-white shadow-[0_10px_24px_rgba(249,115,22,0.35)]">
                 Preparing
               </div>
-              <p className="mt-2 text-sm text-amber-50/80">Kitchen mein jo orders ban rahe hain.</p>
+              <p className="mt-2 text-sm text-amber-50/80">Orders currently being prepared in the kitchen.</p>
             </div>
             <div className="rounded-full bg-amber-500 px-4 py-2 text-sm font-black text-slate-950">
               {preparingTokens.length}
@@ -69,7 +69,7 @@ function Display() {
           <div className="mt-5 flex min-h-20 flex-wrap gap-4">
             {preparingTokens.length === 0 ? (
               <div className="rounded-full border border-dashed border-amber-300/30 bg-black/10 px-5 py-3 text-sm font-medium text-amber-50/75">
-                Abhi koi token preparing mein nahi hai
+                No tokens are being prepared right now
               </div>
             ) : (
               preparingTokens.map((token) => (
@@ -90,7 +90,7 @@ function Display() {
               <div className="inline-flex rounded-full bg-emerald-500 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] text-white shadow-[0_10px_24px_rgba(16,185,129,0.35)]">
                 Ready For Pickup
               </div>
-              <p className="mt-2 text-base text-emerald-50/85 sm:text-lg">Ready hote hi token yahan green mein dikh jayega.</p>
+              <p className="mt-2 text-base text-emerald-50/85 sm:text-lg">As soon as an order is ready, its token appears here in green.</p>
             </div>
             <div className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-black text-slate-950 sm:text-base">
               {readyTokens.length}
@@ -99,7 +99,7 @@ function Display() {
 
           {activeOrders.length === 0 && !error ? (
             <div className="mt-8 flex h-full min-h-72 items-center justify-center rounded-[1.75rem] border border-dashed border-white/15 bg-slate-950/20 px-6 text-center text-xl font-semibold text-slate-200/80">
-              Abhi koi active token nahi hai
+              No active tokens right now
             </div>
           ) : readyTokens.length === 0 ? (
             <div className="mt-8 flex h-full min-h-72 items-center justify-center rounded-[1.75rem] border border-dashed border-white/15 bg-slate-950/20 px-6 text-center text-2xl font-black tracking-[0.12em] text-emerald-50/75 sm:text-4xl">

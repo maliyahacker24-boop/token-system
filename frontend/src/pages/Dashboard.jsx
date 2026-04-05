@@ -76,7 +76,7 @@ function Dashboard() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Owner Console</p>
             <h1 className="mt-2 text-3xl font-black text-slate-900">Restaurant Command Center</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Yahan se malik live queue, kitchen flow, waiter requests, touch-screen ordering, aur customer token system ko monitor kar sakta hai.
+              Monitor the live queue, kitchen flow, waiter requests, touch ordering, and customer token activity from here.
             </p>
           </div>
           <span className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">
@@ -120,9 +120,9 @@ function Dashboard() {
         </div>
 
         <div className="mb-6 rounded-3xl border border-rose-100 bg-rose-50 px-5 py-4 text-sm text-rose-900 ring-1 ring-rose-100">
-          <p className="font-semibold">Touch Order Screen counter par chal sakti hai.</p>
+          <p className="font-semibold">The touch order screen can run at the counter.</p>
           <p className="mt-1 text-rose-800">
-            Agar customer phone use nahi kar pata, to staff is screen par uske saamne touch karke order place kar sakta hai.
+            If a customer cannot use a phone, staff can place the order for them on this screen.
           </p>
         </div>
 

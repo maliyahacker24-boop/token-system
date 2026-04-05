@@ -50,7 +50,7 @@ function Kitchen() {
     <article key={order.id} className="rounded-[1.75rem] bg-white p-5 shadow-lg ring-1 ring-slate-200">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{order.businessName || 'Chaap Wala'}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{order.businessName || 'Restro Token System'}</p>
           <h2 className="mt-2 text-3xl font-black text-slate-900">Token #{order.token_number}</h2>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${order.serviceType === 'Take Away' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>
@@ -103,7 +103,7 @@ function Kitchen() {
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-300">Kitchen Mode</p>
             <h1 className="mt-2 text-5xl font-black">Live Kitchen Queue</h1>
             <p className="mt-3 max-w-2xl text-sm text-slate-300">
-              Yeh screen kitchen LED ke liye hai. Naye orders aur currently preparing orders alag dikhte hain.
+              This screen is designed for the kitchen display. New orders and currently preparing orders are shown separately.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 text-center">

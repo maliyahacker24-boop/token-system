@@ -93,7 +93,7 @@ function Admin() {
     })
 
     if (!data) {
-      setMessage('Save failed. Supabase ya network check karo.')
+      setMessage('Save failed. Check Supabase connectivity or your network.')
       return
     }
 
@@ -106,7 +106,7 @@ function Admin() {
   const handleClear = async () => {
     const { error } = await clearAdminConfigs()
     if (error) {
-      setMessage('Clear failed. Supabase ya network check karo.')
+      setMessage('Clear failed. Check Supabase connectivity or your network.')
       return
     }
     resetForm()
@@ -125,7 +125,7 @@ function Admin() {
   const handleDelete = async (configId) => {
     const { error } = await deleteAdminConfig(configId)
     if (error) {
-      setMessage('Delete failed. Supabase ya network check karo.')
+      setMessage('Delete failed. Check Supabase connectivity or your network.')
       return
     }
     const configs = await loadAdminConfigs()
